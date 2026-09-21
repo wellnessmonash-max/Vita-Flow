@@ -1,0 +1,27 @@
+[auth]
+enabled = true
+providers = ["email", "google"]
+
+[ai]
+required = true
+description = "AI lead scoring, personalized scripts, re-engagement and voice-note extraction for Vita-Flow."
+
+[[secret]]
+name = "VITA_FLOW_INGEST_SECRET"
+required = false
+
+[[secret]]
+name = "META_DATASET_ID"
+required = false
+
+[[secret]]
+name = "META_CAPI_ACCESS_TOKEN"
+required = false
+
+[[secret]]
+name = "META_PAGE_ACCESS_TOKEN"
+required = false
+
+[[secret]]
+name = "META_VERIFY_TOKEN"
+required = false
