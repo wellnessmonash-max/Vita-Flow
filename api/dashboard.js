@@ -1,0 +1,4 @@
+import { db, auth } from 'hatchable';
+export const access = 'public';
+export const methods = ['GET'];
+export default async function(req,res){ const user=await auth.requireUser(req,res); if(!user)return; const uid=user.id; const [a,b,c,d]=await Promise.all([db.query("SELECT count(*)::int AS n FROM leads WHERE user_id=$1 AND created_at::date=CURRENT_DATE",[uid]),db.query("SELECT count(*)::int AS n FROM leads WHERE user_id=$1 AND next_follow_up_at<=now() AND status NOT IN ('Converted','Lost')",[uid]),db.query("SELECT count(*)::int AS n FROM trials t JOIN leads l ON l.id=t.lead_id WHERE l.user_id=$1 AND t.active=true",[uid]),db.query("SELECT id,first_name,last_name,status,ai_score,health_goals,next_follow_up_at FROM leads WHERE user_id=$1 ORDER BY ai_score DESC,updated_at DESC LIMIT 8",[uid])]); res.json({stats:{newLeadsToday:a.rows[0].n,followUpsDue:b.rows[0].n,activeTrials:c.rows[0].n,monthlyRevenue:0},actions:d.rows}); }
