@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS meta_capi_events (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), lead_id uuid NOT NULL, event_name text NOT NULL, event_id text NOT NULL UNIQUE, status text NOT NULL DEFAULT 'pending', response text DEFAULT '', created_at timestamptz NOT NULL DEFAULT now(), sent_at timestamptz NULL)
