@@ -1,0 +1,1 @@
+CREATE TABLE assessments (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), lead_id uuid NOT NULL REFERENCES leads(id) ON DELETE CASCADE, current_weight numeric, target_weight numeric, daily_water_intake integer, energy_level integer, budget_range text, created_at timestamptz NOT NULL DEFAULT now());
