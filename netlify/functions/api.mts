@@ -26,6 +26,8 @@ function score(l:Lead,s:State){const interactions=s.interactions.filter(i=>i.lea
 
 export default async (req:Request,context:Context)=>{
   const user=await getUser(); if(!user)return json({error:"Unauthorized"},401);
+  const roles=(user as any).roles||[];
+  if(path.startsWith("admin/") && !roles.includes("admin")) return json({error:"Forbidden"},403);
   const s=await state(user.id); const u=new URL(req.url); const path=u.pathname.replace(/^\/api\/?/,"");
   if(path==="leads"&&req.method==="GET"){const q=(u.searchParams.get("q")||"").toLowerCase();return json(s.leads.filter(l=>!q||[l.first_name,l.last_name,l.instagram_handle].join(" ").toLowerCase().includes(q)).sort((a,b)=>b.updated_at.localeCompare(a.updated_at)))}
   if(path==="leads"&&req.method==="POST"){const b=await req.json();if(!b.first_name)return json({error:"first_name required"},400);const dup=s.leads.find(l=>(b.phone_number&&l.phone_number===b.phone_number)||(b.instagram_handle&&l.instagram_handle===b.instagram_handle));if(dup)return json({error:"Lead already exists. Merge or Create New?",duplicate:dup},409);const t=now();const l:Lead={id:uid(),first_name:b.first_name,last_name:b.last_name||"",phone_number:b.phone_number||"",instagram_handle:b.instagram_handle||"",source:b.source||"Referral",status:"New",health_goals:b.health_goals||"",pain_points:b.pain_points||"",ai_score:10,next_follow_up_at:new Date(Date.now()+86400000).toISOString(),created_at:t,updated_at:t};s.leads.unshift(l);await save(user.id,s);return json(l,201)}
