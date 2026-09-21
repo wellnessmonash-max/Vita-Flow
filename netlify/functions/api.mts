@@ -27,6 +27,27 @@ export default async (req:Request,context:Context)=>{
   const userId="public";
   const s=await state(userId); const u=new URL(req.url); const path=u.pathname.replace(/^\/api\/?/,"");
   if(path==="leads"&&req.method==="GET"){const q=(u.searchParams.get("q")||"").toLowerCase();return json(s.leads.filter(l=>!q||[l.first_name,l.last_name,l.instagram_handle].join(" ").toLowerCase().includes(q)).sort((a,b)=>b.updated_at.localeCompare(a.updated_at)))}
+  if(path==="webhooks/flexifunnels"&&req.method==="POST"){
+    const b=await req.json().catch(()=>({}));
+    const data=(b&&typeof b==="object"&&(b.data||b.lead||b.contact||b.form_data))||b||{};
+    const pick=(...keys:string[])=>{for(const k of keys){if(data?.[k]!=null&&String(data[k]).trim()!=="")return String(data[k]).trim()}return ""};
+    const fullName=pick("name","full_name","fullName","Name","Full Name");
+    const parts=fullName.split(/\\s+/).filter(Boolean);
+    const first=pick("first_name","firstname","firstName","First Name","FirstName")||parts[0]||"FlexiFunnels Lead";
+    const last=pick("last_name","lastname","lastName","Last Name","LastName")||parts.slice(1).join(" ");
+    const phone=pick("phone","phone_number","phoneNumber","mobile","Mobile","Phone");
+    const email=pick("email","Email");
+    const instagram=pick("instagram","instagram_handle","Instagram","Instagram Handle");
+    const goal=pick("health_goals","health_goal","goal","Goal","Health Goal");
+    const pain=pick("pain_points","pain_point","pain","Pain Points","Pain Point");
+    if(!first)return json({error:"Could not find lead name in FlexiFunnels payload"},400);
+    const dup=s.leads.find(l=>(phone&&l.phone_number===phone)||(email&&l.phone_number===email)||(instagram&&l.instagram_handle===instagram));
+    if(dup)return json({ok:true,duplicate:true,lead_id:dup.id,lead:dup});
+    const t=now();
+    const l:Lead={id:uid(),first_name:first,last_name:last,phone_number:phone||email,instagram_handle:instagram,source:"FlexiFunnels",status:"stage1",health_goals:goal,pain_points:pain,ai_score:10,last_contacted_at:"",next_follow_up_at:new Date(Date.now()+86400000).toISOString(),created_at:t,updated_at:t};
+    s.leads.unshift(l);await save(userId,s);
+    return json({ok:true,created:true,lead_id:l.id,lead:l},201);
+  }
   if(path==="leads"&&req.method==="POST"){const b=await req.json();if(!b.first_name)return json({error:"first_name required"},400);const dup=s.leads.find(l=>(b.phone_number&&l.phone_number===b.phone_number)||(b.instagram_handle&&l.instagram_handle===b.instagram_handle));if(dup)return json({error:"Lead already exists. Merge or Create New?",duplicate:dup},409);const t=now();const l:Lead={id:uid(),first_name:b.first_name,last_name:b.last_name||"",phone_number:b.phone_number||"",instagram_handle:b.instagram_handle||"",source:b.source||"Referral",status:"New",health_goals:b.health_goals||"",pain_points:b.pain_points||"",ai_score:10,last_contacted_at:b.last_contacted_at||"",next_follow_up_at:b.next_follow_up_at||new Date(Date.now()+86400000).toISOString(),created_at:t,updated_at:t};s.leads.unshift(l);await save(userId,s);return json(l,201)}
   if(path.startsWith("leads/")&&req.method==="DELETE"){const id=path.split("/").pop()!;const index=s.leads.findIndex(l=>l.id===id);if(index<0)return json({error:"Lead not found"},404);s.leads.splice(index,1);s.interactions=s.interactions.filter(i=>i.lead_id!==id);await save(userId,s);return json({ok:true})}
   if(path.startsWith("leads/")&&req.method==="PATCH"){const id=path.split("/").pop()!;const l=s.leads.find(x=>x.id===id);if(!l)return json({error:"Lead not found"},404);const b=await req.json();if(b.last_contacted_at!==undefined)l.last_contacted_at=b.last_contacted_at||"";if(b.next_follow_up_at!==undefined)l.next_follow_up_at=b.next_follow_up_at||"";if(b.first_name!==undefined)l.first_name=b.first_name;if(b.last_name!==undefined)l.last_name=b.last_name;if(b.phone_number!==undefined)l.phone_number=b.phone_number;if(b.instagram_handle!==undefined)l.instagram_handle=b.instagram_handle;if(b.health_goals!==undefined)l.health_goals=b.health_goals;if(b.pain_points!==undefined)l.pain_points=b.pain_points;l.updated_at=now();await save(userId,s);return json(l)}
