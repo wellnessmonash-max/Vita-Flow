@@ -1,0 +1,1 @@
+CREATE TABLE trials (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), lead_id uuid NOT NULL REFERENCES leads(id) ON DELETE CASCADE, trial_type text NOT NULL DEFAULT '3-Day', start_date date NOT NULL DEFAULT CURRENT_DATE, current_day integer NOT NULL DEFAULT 1, active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now());
