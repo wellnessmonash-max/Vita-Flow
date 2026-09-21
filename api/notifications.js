@@ -1,0 +1,3 @@
+import { db, auth } from 'hatchable';
+export const access='public'; export const methods=['GET'];
+export default async function(req,res){const user=await auth.requireUser(req,res);if(!user)return;const {rows}=await db.query("SELECT id,first_name,last_name,status,ai_score,next_follow_up_at FROM leads WHERE user_id=$1 AND next_follow_up_at<=now()+interval '24 hours' AND status NOT IN ('Converted','Lost') ORDER BY CASE WHEN ai_score>=80 THEN 0 WHEN ai_score>=50 THEN 1 ELSE 2 END,next_follow_up_at LIMIT 10",[user.id]);res.json(rows);}
