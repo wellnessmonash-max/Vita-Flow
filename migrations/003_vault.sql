@@ -1,0 +1,1 @@
+CREATE TABLE proof_vault (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id text NOT NULL, client_name text NOT NULL, image_before_url text DEFAULT '', image_after_url text DEFAULT '', testimonial_text text DEFAULT '', category text NOT NULL DEFAULT 'WeightLoss', created_at timestamptz NOT NULL DEFAULT now());
