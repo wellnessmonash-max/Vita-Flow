@@ -2,5 +2,5 @@
   "name":"vita-flow-netlify",
   "private":true,
   "type":"module",
-  "dependencies":{"@netlify/functions":"latest","@netlify/blobs":"latest","@netlify/identity":"latest"}
+  "dependencies":{"@netlify/functions":"latest","@netlify/blobs":"latest"}
 }
