@@ -29,17 +29,27 @@ export default async (req:Request,context:Context)=>{
   if(path==="leads"&&req.method==="GET"){const q=(u.searchParams.get("q")||"").toLowerCase();return json(s.leads.filter(l=>!q||[l.first_name,l.last_name,l.instagram_handle].join(" ").toLowerCase().includes(q)).sort((a,b)=>b.updated_at.localeCompare(a.updated_at)))}
   if(path==="webhooks/flexifunnels"&&req.method==="POST"){
     const b=await req.json().catch(()=>({}));
-    const data=(b&&typeof b==="object"&&(b.data||b.lead||b.contact||b.form_data))||b||{};
-    const pick=(...keys:string[])=>{for(const k of keys){if(data?.[k]!=null&&String(data[k]).trim()!=="")return String(data[k]).trim()}return ""};
-    const fullName=pick("name","full_name","fullName","Name","Full Name");
+    const flat:any={};
+    const walk=(x:any)=>{
+      if(!x||typeof x!=="object")return;
+      if(Array.isArray(x)){for(const item of x)walk(item);return}
+      for(const [k,v] of Object.entries(x)){
+        const nk=k.toLowerCase().replace(/[^a-z0-9]/g,"");
+        if(v!=null&&typeof v!=="object")flat[nk]=String(v).trim();
+        else walk(v);
+      }
+    };
+    walk(b);
+    const pick=(...keys:string[])=>{for(const k of keys){const v=flat[k.toLowerCase().replace(/[^a-z0-9]/g,"")];if(v)return v}return ""};
+    const fullName=pick("name","full_name","fullname","contactname");
     const parts=fullName.split(/\\s+/).filter(Boolean);
-    const first=pick("first_name","firstname","firstName","First Name","FirstName")||parts[0]||"FlexiFunnels Lead";
-    const last=pick("last_name","lastname","lastName","Last Name","LastName")||parts.slice(1).join(" ");
-    const phone=pick("phone","phone_number","phoneNumber","mobile","Mobile","Phone");
-    const email=pick("email","Email");
-    const instagram=pick("instagram","instagram_handle","Instagram","Instagram Handle");
-    const goal=pick("health_goals","health_goal","goal","Goal","Health Goal");
-    const pain=pick("pain_points","pain_point","pain","Pain Points","Pain Point");
+    const first=pick("first_name","firstname","givenname")||parts[0]||"FlexiFunnels Lead";
+    const last=pick("last_name","lastname","surname","familyname")||parts.slice(1).join(" ");
+    const phone=pick("phone","phonenumber","mobile","mobilenumber");
+    const email=pick("email","emailaddress");
+    const instagram=pick("instagram","instagramhandle");
+    const goal=pick("health_goals","healthgoal","goal","healthgoals");
+    const pain=pick("pain_points","painpoint","pain","painpoints");
     if(!first)return json({error:"Could not find lead name in FlexiFunnels payload"},400);
     const dup=s.leads.find(l=>(phone&&l.phone_number===phone)||(email&&l.phone_number===email)||(instagram&&l.instagram_handle===instagram));
     if(dup)return json({ok:true,duplicate:true,lead_id:dup.id,lead:dup});
