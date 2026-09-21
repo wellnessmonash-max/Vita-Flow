@@ -1,0 +1,1 @@
+CREATE TABLE interactions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), lead_id uuid NOT NULL REFERENCES leads(id) ON DELETE CASCADE, type text NOT NULL DEFAULT 'WhatsApp', content text NOT NULL, sentiment text DEFAULT '', ai_suggested_reply text DEFAULT '', created_at timestamptz NOT NULL DEFAULT now());
