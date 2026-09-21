@@ -1,0 +1,3 @@
+import { auth } from 'hatchable';
+export const access='public'; export const methods=['GET','POST'];
+export default async function(req,res){const user=await auth.requireUser(req,res);if(!user)return;const goal=encodeURIComponent(req.query?.goal||'weight loss');const message=encodeURIComponent(req.query?.message||`Hi! I'm interested in learning more about ${req.query?.goal||'wellness'}.`);res.json({link:`https://wa.me/?text=${message}`,instagramBio:`https://wa.me/?text=${message}`,createdFor:user.email||user.name});}
