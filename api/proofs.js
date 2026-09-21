@@ -1,0 +1,3 @@
+import { db, auth } from 'hatchable';
+export const access='public'; export const methods=['GET','POST'];
+export default async function(req,res){const user=await auth.requireUser(req,res);if(!user)return;if(req.method==='GET'){const {rows}=await db.query("SELECT * FROM proof_vault WHERE user_id=$1 ORDER BY created_at DESC",[user.id]);return res.json(rows);}const b=req.body||{};if(!b.client_name)return res.status(400).json({error:'client_name required'});const {rows}=await db.query("INSERT INTO proof_vault(user_id,client_name,image_before_url,image_after_url,testimonial_text,category) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",[user.id,b.client_name,b.image_before_url||'',b.image_after_url||'',b.testimonial_text||'',b.category||'WeightLoss']);res.status(201).json(rows[0]);}
